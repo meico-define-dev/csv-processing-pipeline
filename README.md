@@ -1,18 +1,39 @@
-# Daily CSV Preprocessor
+# CSV Processing Pipeline
 
 ## Overview
-日次で出力されるCSVファイルを結合・加工・整形するツールです。  
+日次で出力されるCSVファイルを前処理し、月次単位で結合・最新化するツールです。  
 Power Queryで行っていた処理をPythonに移行し、再利用性と保守性の向上を目的としています。
-業務での利用を想定したツール開発を進めています。
 
-## Features
-- 複数CSVファイルの結合
-- データのクレンジング（不要列削除・型変換）
-- 重複データの除外
-- 更新日時ベースで最新データを抽出
+## Architecture
+```text
+Raw daily CSV
+↓
+daily-csv-preprocessor
+↓
+Preprocessed daily CSV
+↓
+monthly-latest-processor
+↓
+Monthly latest CSV
+```
+
+## Components
+### daily-csv-preprocessor
+日次CSVファイル単位の前処理を担当します。
+- カラム内改行の補正
+- 必要カラムの抽出
+- 不足カラムの補完
+- 前処理済みCSVの出力
+
+### monthly-latest-processor
+前処理済みCSVを月次単位で結合し、最新レコードを抽出します。
+- 複数ファイルの結合
+- record_id単位で最新レコード抽出（updated_at）
+- 月次latest CSVの出力
 
 ## Tech Stack
 - Python
+- pandas
 - DuckDB
 - Power Query（移行元）
 - ChatGPT（設計・実装支援）
@@ -22,29 +43,3 @@ Power Queryで行っていた処理をPythonに移行し、再利用性と保守
 
 ## Author
 Meico
-
-## Usage
-### ①　入力データ
-日次で出力されるCSVファイルを指定フォルダに配置
-
-### ②　実行
-Pythonで以下を実行
-
-```bash
-python main.py
-```
-※ 実行環境： Python 3.x
-※ 事前に必要なライブラリ：
-- pandas
-- duckdb
-
-### ③　出力
-加工済みのCSVファイルを指定フォルダに出力
-
-## Process
-以下の処理を行います。
-
-1. CSVファイルを読み込み
-2. 必要なカラムを抽出・型変換
-3. 更新日時を基準に重複データを整理（最新データのみ保持）
-4. 加工済みデータを出力
