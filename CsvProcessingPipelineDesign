@@ -1,0 +1,72 @@
+# CSV Processing Pipeline Design
+
+## 1. Overview
+日次CSVファイルを前処理し、月次単位で結合・最新化するデータ処理パイプライン。
+
+## 2. Scope
+### 対象
+- 日次CSVの前処理
+- 必要カラムの抽出
+- 月次単位の結合
+- record_id単位の最新レコード抽出
+- 月次latest CSVの出力
+
+### 対象外
+- 集計・可視化
+- 手動補正作業
+- 業務固有カラム名の公開
+- 元データそのものの公開
+
+## 3. Tools
+### daily-csv-preprocessor
+日次CSVファイル単位の前処理を担当。
+
+### monthly-latest-processor
+前処理済みCSVを月次単位で結合し、最新化を担当。
+
+## 4. Data Flow
+```text
+Raw daily CSV
+→ daily-csv-preprocessor
+→ Preprocessed daily CSV
+→ monthly-latest-processor
+→ Monthly latest CSV
+```
+
+## 5. Responsibility
+### daily-csv-preprocessor
+- 1ファイル単位で処理
+- カラム内改行補正
+- target_columns.csv による必要カラム抽出
+- 不足カラム補完
+- 前処理済み日次CSV出力
+
+### monthly-latest-processor
+- 前処理済み日次CSVを複数読み込み
+- 月次結合
+- record_id + updated_at による最新化
+- 月次latest CSV出力
+
+## 6. Configuration
+- input_root：入力CSVのルートフォルダ
+- output_root：出力先ルートフォルダ
+- target_columns.csv：抽出対象カラム定義
+- record_id_column：最新化のキー項目
+- updated_at_column：最新化の基準日時
+- encoding：文字コード
+- file_pattern：対象ファイル名パターン
+
+## 7. Error Handling
+- 指定カラムが存在しない場合は空列追加
+- record_id 空欄は最新化対象外
+- updated_at 不正値はログ出力
+- 読込失敗ファイルはログ出力してスキップ
+- 出力先フォルダがなければ作成
+- カラム内改行の補正に失敗した場合は、対象ファイルをログ出力してスキップまたは退避する
+
+## 8. Design Policy
+- 処理責務を分離する
+- 設定ファイルで差分を吸収する
+- 大容量CSVを想定する
+- 後続処理を軽くするため、不要カラムは早めに除外する
+- 実業務のカラム名・データ内容は使用せず、汎用的な名称で設計する
